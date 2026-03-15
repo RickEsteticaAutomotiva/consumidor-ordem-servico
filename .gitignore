@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Google Calendar OAuth2 ###
+tokens/
+credentials-oauth.json
+

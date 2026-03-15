@@ -11,6 +11,7 @@ import java.util.List;
 @Configuration
 public class RabbitConfig {
 
+
     @Bean
     public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(
             ConnectionFactory connectionFactory
