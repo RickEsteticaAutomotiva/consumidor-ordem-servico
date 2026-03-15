@@ -21,6 +21,7 @@ public class AgendamentoCalendarioService {
 
     private final CalendarioPort calendarioPort;
     private final CalendarioEventoPersistenceService persistenceService;
+    private final OrdemServicoStatusService ordemServicoStatusService;
 
     private static final String FUSO_SAO_PAULO = "America/Sao_Paulo";
     private static final String LOCALIZACAO_PADRAO = "Estética Automotiva Rick - Av. Principal, 123";
@@ -32,28 +33,19 @@ public class AgendamentoCalendarioService {
     @Transactional
     public CalendarioEvento criarEventoAgendamento(OrdemServicoCriadaEvent event) {
         try {
-            log.info("Iniciando criação de evento no Google Calendar");
-            log.info("=== DADOS RECEBIDOS DA ORDEM ===");
-            log.info("✓ IdOrdemServico: {}", event.IdOrdemServico());
-            log.info("✓ placaVeiculo: {}", event.placaVeiculo());
-            log.info("✓ dataAgendamento: {}", event.dataAgendamento());
-            log.info("✓ servicos: {}", event.servicos());
-            log.info("✓ observacoes: {}", event.observacoes());
+            log.info("Processando agendamento para ordem {}", event.IdOrdemServico());
+            ordemServicoStatusService.confirmarAgendamento(event.IdOrdemServico());
 
-            // Montar e criar evento no Google Calendar
             CalendarioEventoRequest request = montarEvento(event);
             var response = calendarioPort.criarEvento(request);
+            log.info("Evento Google criado para ordem {} (googleId={})", event.IdOrdemServico(), response.getId());
 
-            log.info("✅ Evento agendado com sucesso no Google Calendar. ID do evento: {}", response.getId());
-
-            // Persistir evento no banco de dados
             CalendarioEvento calendarioEvento = persistenceService.persistirEvento(response, event);
-
-            log.info("✅ Evento persistido com sucesso no banco de dados. ID: {}", calendarioEvento.getId());
+            log.info("Evento persistido para ordem {} (id={})", event.IdOrdemServico(), calendarioEvento.getId());
             return calendarioEvento;
 
         } catch (Exception e) {
-            log.error("❌ Falha ao criar evento no Google Calendar ou persistir no banco", e);
+            log.error("Falha ao criar ou persistir evento para ordem {}", event.IdOrdemServico(), e);
             throw e;
         }
     }
@@ -105,19 +97,4 @@ public class AgendamentoCalendarioService {
 
         return descricao.toString();
     }
-
-    /**
-     * Busca todos os eventos de uma ordem de serviço
-     */
-    public List<CalendarioEvento> buscarEventosPorOrdem(Long idOrdemServico) {
-        return persistenceService.encontrarEventosPorOrdem(idOrdemServico);
-    }
-
-    /**
-     * Busca um evento pelo ID do Google Calendar
-     */
-    public java.util.Optional<CalendarioEvento> buscarEventoPorIdGoogle(String eventoIdGoogle) {
-        return persistenceService.encontrarEventoPorIdGoogle(eventoIdGoogle);
-    }
 }
-

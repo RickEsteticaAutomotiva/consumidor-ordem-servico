@@ -18,15 +18,13 @@ public class OrderServicoConsumer {
 
     @RabbitListener(queues = RabbitMqConsts.ORDEM_SERVICO_CRIADA_QUEUE)
     private void consumidorOnderServico(OrdemServicoCriadaEvent event) {
-        log.info("=== ORDEM DE SERVIÇO CRIADA RECEBIDA ===");
-        log.info("ID Ordem: {}", event.IdOrdemServico());
+        log.info("Ordem de serviço {} recebida para placa {}", event.IdOrdemServico(), event.placaVeiculo());
         try {
             CalendarioEvento calendarioEvento = agendamentoCalendarioService.criarEventoAgendamento(event);
-            log.info("✅ Processamento concluído com sucesso!");
-            log.info("   ID do evento no banco de dados: {}", calendarioEvento.getId());
-            log.info("   ID do evento no Google: {}", calendarioEvento.getEventoIdGoogle());
+            log.info("Evento criado para ordem {} (dbId={}, googleId={})",
+                    calendarioEvento.getIdOrdemServico(), calendarioEvento.getId(), calendarioEvento.getEventoIdGoogle());
         } catch (Exception e) {
-            log.error("❌ Erro ao processar ordem de serviço ID: {}", event.IdOrdemServico(), e);
+            log.error("Erro ao processar ordem de serviço {}", event.IdOrdemServico(), e);
             throw e;
         }
     }
