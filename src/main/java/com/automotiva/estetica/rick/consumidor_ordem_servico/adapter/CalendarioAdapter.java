@@ -1,6 +1,7 @@
 package com.automotiva.estetica.rick.consumidor_ordem_servico.adapter;
 
 import com.automotiva.estetica.rick.consumidor_ordem_servico.exception.IntegracaoException;
+import com.automotiva.estetica.rick.consumidor_ordem_servico.port.CalendarioEventoAtualizacaoRequest;
 import com.automotiva.estetica.rick.consumidor_ordem_servico.port.CalendarioEventoRequest;
 import com.automotiva.estetica.rick.consumidor_ordem_servico.port.CalendarioEventoResponse;
 import com.automotiva.estetica.rick.consumidor_ordem_servico.port.CalendarioPort;
@@ -9,6 +10,7 @@ import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.model.Event;
 import com.google.api.services.calendar.model.EventAttendee;
 import com.google.api.services.calendar.model.EventDateTime;
+import com.google.api.services.calendar.model.Events;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -20,6 +22,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -51,6 +54,55 @@ public class CalendarioAdapter implements CalendarioPort {
                     .mensagem("Falha ao criar evento no Google Calendar")
                     .detalhes(e.getMessage())
                     .build();
+        }
+    }
+
+    @Override
+    public void atualizarEvento(CalendarioEventoAtualizacaoRequest request) {
+        try {
+            Calendar calendarService = conexao.obterServico();
+            Events lista = calendarService.events().list(CALENDARIO)
+                    .setPrivateExtendedProperty(
+                            List.of("idOrdemServico=" + request.getIdOrdemServico())
+                    ).execute();
+
+            if (lista.getItems().isEmpty()) {
+                throw new RuntimeException("Evento não encontrado para ordem " + request.getIdOrdemServico());
+            }
+
+            Event eventoExistente = lista.getItems().get(0);
+            String eventId = eventoExistente.getId();
+
+            Event patchBody = new Event();
+
+            if (request.getObservacoes() != null) {
+                String descricaoAtual = eventoExistente.getDescription();
+                String novaDescricao = mesclarDescricao(descricaoAtual, request.getObservacoes());
+                patchBody.setDescription(novaDescricao);
+            }
+
+            if (request.getDataAgendamento() != null) {
+                Instant inicio = request.getDataAgendamento()
+                        .atZone(ZoneId.of("America/Sao_Paulo"))
+                        .toInstant();
+
+                Instant fim = request.getDataAgendamento()
+                        .plusHours(1)
+                        .atZone(ZoneId.of("America/Sao_Paulo"))
+                        .toInstant();
+
+                patchBody.setStart(new EventDateTime()
+                        .setDateTime(new DateTime(inicio.toEpochMilli()))
+                        .setTimeZone("America/Sao_Paulo"));
+
+                patchBody.setEnd(new EventDateTime()
+                        .setDateTime(new DateTime(fim.toEpochMilli()))
+                        .setTimeZone("America/Sao_Paulo"));
+            }
+
+            calendarService.events().patch("primary", eventId, patchBody).execute();
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao atualizar evento no Google Calendar", e);
         }
     }
 
@@ -146,5 +198,24 @@ public class CalendarioAdapter implements CalendarioPort {
         matcher.appendTail(resultado);
 
         return resultado.toString();
+    }
+
+    /**
+     * Lógica para substituir apenas a parte das observações
+     */
+    private String mesclarDescricao(String descricaoAntiga, String novaObservacao) {
+        if (descricaoAntiga == null) return "Observações: " + novaObservacao;
+
+        // Localiza onde começa o marcador de observações que você criou no Builder
+        String marcador = "\nObservações: ";
+        int index = descricaoAntiga.indexOf(marcador);
+
+        if (index != -1) {
+            // Mantém tudo que estava ANTES do marcador e coloca a nova observação
+            return descricaoAntiga.substring(0, index) + marcador + novaObservacao;
+        } else {
+            // Se não existia observação antes, apenas concatena no fim
+            return descricaoAntiga + marcador + novaObservacao;
+        }
     }
 }

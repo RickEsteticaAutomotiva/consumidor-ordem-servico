@@ -34,5 +34,8 @@ build/
 
 ### Google Calendar OAuth2 ###
 tokens/
-credentials-oauth.json
+calendar-service-account.json
+
+### Application properties ###
+application.properties
 
