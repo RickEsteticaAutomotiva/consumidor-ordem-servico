@@ -58,11 +58,13 @@ public class AgendamentoCalendarioService {
         Instant inicio = dataAgendamento.atZone(ZoneId.of(FUSO_SAO_PAULO)).toInstant();
         Instant fim = dataAgendamento.plusHours(1).atZone(ZoneId.of(FUSO_SAO_PAULO)).toInstant();
 
+        String idOrdemServico = event.IdOrdemServico().toString();
         String placa = event.placaVeiculo();
         String titulo = "Atendimento veículo - " + placa;
         String descricao = construirDescricao(event);
 
         return CalendarioEventoRequest.builder()
+                .idOrdemServico(idOrdemServico)
                 .titulo(titulo)
                 .descricao(descricao)
                 .localizacao(LOCALIZACAO_PADRAO)

@@ -19,7 +19,9 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -91,6 +93,10 @@ public class CalendarioAdapter implements CalendarioPort {
         evento.setEnd(new EventDateTime()
                 .setDateTime(new DateTime(RFC3339.format(fim)))
                 .setTimeZone(fuso));
+
+        Event.ExtendedProperties extendedProperties = new Event.ExtendedProperties();
+        extendedProperties.setPrivate(Map.of("idOrdemServico", request.getIdOrdemServico()));
+        evento.setExtendedProperties(extendedProperties);
 
         if (request.getEmailsParticipantes() != null && !request.getEmailsParticipantes().isEmpty()) {
             var participantes = request.getEmailsParticipantes().stream()
