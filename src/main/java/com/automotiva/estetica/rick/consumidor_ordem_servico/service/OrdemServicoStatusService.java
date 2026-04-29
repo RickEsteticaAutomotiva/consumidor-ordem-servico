@@ -17,13 +17,23 @@ public class OrdemServicoStatusService {
     private final OrdemServicoRepositoryPort ordemServicoRepositoryPort;
 
     @Transactional
-    public void confirmarAgendamento(Long ordemServicoId) {
-        if (ordemServicoId == null) {
-            throw new IllegalArgumentException("Id da ordem de serviço não pode ser nulo");
+    public void confirmarAgendamento(Long ordemServicoId, Long statusOrdemServico) {
+        if (statusOrdemServico == null) {
+            log.info("A Ordem de serviço está sem status para atualização");
+            return;
         }
 
-        log.info("Atualizando status da ordem {} para AGENDA_CONFIRMADA", ordemServicoId);
-        ordemServicoRepositoryPort.atualizarStatus(ordemServicoId, StatusOrdem.AGENDA_CONFIRMADA.getId());
+        Long statusId = 0L;
+        switch (statusOrdemServico.intValue()) {
+            case 1 -> statusId = 1L;
+            case 2 -> statusId = 2L;
+            case 3 -> statusId = 3L;
+            case 4 -> statusId = 4L;
+            case 5 -> statusId = 5L;
+        }
+
+        log.info("Atualizando status da ordem {} | status: {}", ordemServicoId, statusId);
+        ordemServicoRepositoryPort.atualizarStatus(ordemServicoId, statusId);
         log.info("Status da ordem {} atualizado com sucesso", ordemServicoId);
     }
 

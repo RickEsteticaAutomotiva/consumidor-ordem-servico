@@ -20,9 +20,8 @@ public class OrderServicoConsumer {
     private void consumidorOrdemServico(OrdemServicoCriadaEvent event) {
         log.info("Ordem de serviço {} recebida", event.IdOrdemServico());
         try {
-            CalendarioEvento calendarioEvento = agendamentoCalendarioService.criarEventoAgendamento(event);
-            log.info("Evento criado para ordem {} (dbId={}, googleId={})",
-                    calendarioEvento.getIdOrdemServico(), calendarioEvento.getId(), calendarioEvento.getEventoIdGoogle());
+            agendamentoCalendarioService.criarEventoAgendamento(event);
+            log.info("Evento criado para ordem de serviço {} ", event.IdOrdemServico());
         } catch (Exception e) {
             log.error("Erro ao processar ordem de serviço {}", event.IdOrdemServico(), e);
             throw e;
