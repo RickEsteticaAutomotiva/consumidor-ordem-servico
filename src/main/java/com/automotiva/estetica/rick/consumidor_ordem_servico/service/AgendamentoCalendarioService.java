@@ -31,22 +31,13 @@ public class AgendamentoCalendarioService {
     private static final String FUSO_SAO_PAULO = "America/Sao_Paulo";
     private static final String LOCALIZACAO_PADRAO = "Estética Automotiva Rick - Av. Principal, 123";
 
-    /**
-     * Cria evento no Google Calendar e persiste no banco de dados
-     * Operação atômica: ou sucede completamente ou falha
-     */
     @Transactional
     public CalendarioEvento criarEventoAgendamento(OrdemServicoCriadaEvent event) {
         try {
-//            log.info("Processando agendamento para ordem {}", event.IdOrdemServico());
-//            ordemServicoStatusService.confirmarAgendamento(event.IdOrdemServico());
-
             CalendarioEventoRequest request = montarEvento(event);
             var response = calendarioPort.criarEvento(request);
             log.info("Evento Google criado para ordem {} (googleId={})", event.IdOrdemServico(), response.getId());
 
-//            CalendarioEvento calendarioEvento = persistenceService.persistirEvento(response, event);
-//            log.info("Evento persistido para ordem {} (id={})", event.IdOrdemServico(), calendarioEvento.getId());
             return null;
 
         } catch (Exception e) {
@@ -65,8 +56,6 @@ public class AgendamentoCalendarioService {
             calendarioPort.atualizarEvento(request);
             log.info("Evento Google atualizado para ordem {}", event.idOrdemServico());
 
-//            CalendarioEvento calendarioEvento = persistenceService.persistirEvento(response, event);
-//            log.info("Evento persistido para ordem {} (id={})", event.IdOrdemServico(), calendarioEvento.getId());
             return null;
 
         } catch (Exception e) {
@@ -75,9 +64,6 @@ public class AgendamentoCalendarioService {
         }
     }
 
-    /**
-     * Monta o objeto de requisição para criar evento no Google Calendar
-     */
     private CalendarioEventoRequest montarEvento(OrdemServicoCriadaEvent event) {
         LocalDateTime dataAgendamento = event.dataAgendamento();
         Instant inicio = dataAgendamento.atZone(ZoneId.of(FUSO_SAO_PAULO)).toInstant();
@@ -115,9 +101,6 @@ public class AgendamentoCalendarioService {
                 .build();
     }
 
-    /**
-     * Constrói a descrição do evento com dados da ordem de serviço
-     */
     private String construirDescricao(OrdemServicoCriadaEvent event) {
         StringBuilder descricao = new StringBuilder();
 

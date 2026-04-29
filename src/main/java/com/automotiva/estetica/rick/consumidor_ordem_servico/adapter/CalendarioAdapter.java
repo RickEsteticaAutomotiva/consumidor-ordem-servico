@@ -13,6 +13,7 @@ import com.google.api.services.calendar.model.EventDateTime;
 import com.google.api.services.calendar.model.Events;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -33,11 +34,10 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class CalendarioAdapter implements CalendarioPort {
 
+    @Value("${calendario.email}")
+    private String CALENDARIO;
     private final GoogleCalendarConexao conexao;
-
-    private static final String CALENDARIO = "primary";
     private static final DateTimeFormatter RFC3339 = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
-    // Formatador para pt-BR
     private static final DateTimeFormatter PT_BR_DATA_HORA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss", new Locale("pt", "BR"));
 
     @Override
@@ -46,6 +46,7 @@ public class CalendarioAdapter implements CalendarioPort {
             Calendar servico = conexao.obterServico();
             Event evento = montarEvento(request);
             CalendarioEventoResponse response = toResponse(servico.events().insert(CALENDARIO, evento).execute());
+
             log.info("Evento criado com sucesso no Google Calendar. ID: {}", response.getId());
             return response;
         } catch (IOException e) {
@@ -100,7 +101,7 @@ public class CalendarioAdapter implements CalendarioPort {
                         .setTimeZone("America/Sao_Paulo"));
             }
 
-            calendarService.events().patch("primary", eventId, patchBody).execute();
+            calendarService.events().patch(CALENDARIO, eventId, patchBody).execute();
         } catch (Exception e) {
             throw new RuntimeException("Erro ao atualizar evento no Google Calendar", e);
         }
@@ -167,18 +168,11 @@ public class CalendarioAdapter implements CalendarioPort {
         return evento;
     }
 
-    /**
-     * Formata datas ISO 8601 (2026-03-20T14:30:00) para formato pt-BR (20/03/2026 14:30:00)
-     *
-     * @param descricao Descrição contendo possíveis datas em formato ISO
-     * @return Descrição com datas formatadas em pt-BR
-     */
     private String formatarDescricaoEmPtBr(String descricao) {
         if (descricao == null || descricao.isEmpty()) {
             return descricao;
         }
 
-        // Padrão para encontrar datas ISO: YYYY-MM-DDTHH:MM:SS
         Pattern pattern = Pattern.compile("(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})");
         Matcher matcher = pattern.matcher(descricao);
 
@@ -191,7 +185,6 @@ public class CalendarioAdapter implements CalendarioPort {
             String minuto = matcher.group(5);
             String segundo = matcher.group(6);
 
-            // Formata para pt-BR: DD/MM/YYYY HH:MM:SS
             String dataFormatada = String.format("%s/%s/%s %s:%s:%s", dia, mes, ano, hora, minuto, segundo);
             matcher.appendReplacement(resultado, Matcher.quoteReplacement(dataFormatada));
         }
@@ -200,21 +193,15 @@ public class CalendarioAdapter implements CalendarioPort {
         return resultado.toString();
     }
 
-    /**
-     * Lógica para substituir apenas a parte das observações
-     */
     private String mesclarDescricao(String descricaoAntiga, String novaObservacao) {
         if (descricaoAntiga == null) return "Observações: " + novaObservacao;
 
-        // Localiza onde começa o marcador de observações que você criou no Builder
         String marcador = "\nObservações: ";
         int index = descricaoAntiga.indexOf(marcador);
 
         if (index != -1) {
-            // Mantém tudo que estava ANTES do marcador e coloca a nova observação
             return descricaoAntiga.substring(0, index) + marcador + novaObservacao;
         } else {
-            // Se não existia observação antes, apenas concatena no fim
             return descricaoAntiga + marcador + novaObservacao;
         }
     }
