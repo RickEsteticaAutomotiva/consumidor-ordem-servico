@@ -13,6 +13,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CalendarioEventoRequest {
+    private String idOrdemServico;
     private String titulo;
     private String descricao;
     private String localizacao;
