@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
 public class CalendarioAdapter implements CalendarioPort {
 
     @Value("${calendario.email}")
-    private String CALENDARIO;
+    private String calendarioEmail;
     private final GoogleCalendarConexao conexao;
     private static final DateTimeFormatter RFC3339 = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
     private static final DateTimeFormatter PT_BR_DATA_HORA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss", new Locale("pt", "BR"));
@@ -45,7 +45,7 @@ public class CalendarioAdapter implements CalendarioPort {
         try {
             Calendar servico = conexao.obterServico();
             Event evento = montarEvento(request);
-            CalendarioEventoResponse response = toResponse(servico.events().insert(CALENDARIO, evento).execute());
+            CalendarioEventoResponse response = toResponse(servico.events().insert(calendarioEmail, evento).execute());
 
             log.info("Evento criado com sucesso no Google Calendar. ID: {}", response.getId());
             return response;
@@ -62,7 +62,7 @@ public class CalendarioAdapter implements CalendarioPort {
     public void atualizarEvento(CalendarioEventoAtualizacaoRequest request) {
         try {
             Calendar calendarService = conexao.obterServico();
-            Events lista = calendarService.events().list(CALENDARIO)
+            Events lista = calendarService.events().list(calendarioEmail)
                     .setPrivateExtendedProperty(
                             List.of("idOrdemServico=" + request.getIdOrdemServico())
                     ).execute();
@@ -101,7 +101,7 @@ public class CalendarioAdapter implements CalendarioPort {
                         .setTimeZone("America/Sao_Paulo"));
             }
 
-            calendarService.events().patch(CALENDARIO, eventId, patchBody).execute();
+            calendarService.events().patch(calendarioEmail, eventId, patchBody).execute();
         } catch (Exception e) {
             throw new RuntimeException("Erro ao atualizar evento no Google Calendar", e);
         }
